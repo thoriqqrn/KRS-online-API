@@ -43,12 +43,13 @@ process.on('unhandledRejection', (reason, promise) => {
   // Don't exit, keep server running
 });
 
-// Start server
-const PORT = config.port;
-const HOST = '0.0.0.0'; // Listen on all network interfaces
+// Start server only in non-serverless environment
+if (!process.env.VERCEL) {
+  const PORT = config.port;
+  const HOST = '0.0.0.0';
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`
+  const server = app.listen(PORT, HOST, () => {
+    console.log(`
 ╔════════════════════════════════════════╗
 ║   KRS Online Backend Server Running    ║
 ║   Port: ${PORT}                           ║
@@ -57,19 +58,20 @@ const server = app.listen(PORT, HOST, () => {
 ║   Local URL: http://localhost:${PORT}  ║
 ║   Network URL: http://0.0.0.0:${PORT}  ║
 ╚════════════════════════════════════════╝
-  `);
-});
+    `);
+  });
 
-// Prevent server from exiting on errors
-server.on('error', (error) => {
-  console.error('❌ Server error:', error);
-  if (error.code === 'EADDRINUSE') {
-    console.error(`\n⚠️  Port ${PORT} is already in use!`);
-    console.error('Run this to kill the process:');
-    console.error(`   netstat -ano | findstr :${PORT}`);
-    console.error('   taskkill /PID <PID> /F\n');
-    process.exit(1);
-  }
-});
+  server.on('error', (error) => {
+    console.error('❌ Server error:', error);
+    if (error.code === 'EADDRINUSE') {
+      console.error(`\n⚠️  Port ${PORT} is already in use!`);
+      console.error('Run this to kill the process:');
+      console.error(`   netstat -ano | findstr :${PORT}`);
+      console.error('   taskkill /PID <PID> /F\n`);
+      process.exit(1);
+    }
+  });
+}
 
+// Export for Vercel serverless
 module.exports = app;
