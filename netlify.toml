@@ -1,0 +1,18 @@
+[build]
+  functions = "netlify/functions"
+
+[functions]
+  external_node_modules = ["express", "firebase-admin"]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  force = true
+  from = "/api/*"
+  status = 200
+  to = "/.netlify/functions/api/:splat"
+
+[[redirects]]
+  force = true
+  from = "/*"
+  status = 200
+  to = "/.netlify/functions/api/:splat"
