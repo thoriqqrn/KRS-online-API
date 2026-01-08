@@ -10,7 +10,7 @@ const initializeFirebase = () => {
       return admin.app();
     }
 
-    // Priority 1: Check for FIREBASE_SERVICE_ACCOUNT environment variable (Netlify)
+    // Priority 1: Check for FIREBASE_SERVICE_ACCOUNT environment variable (Vercel/Netlify)
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       try {
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -21,6 +21,7 @@ const initializeFirebase = () => {
         return admin.app();
       } catch (parseError) {
         console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT:', parseError.message);
+        throw parseError;
       }
     }
 
@@ -36,6 +37,7 @@ const initializeFirebase = () => {
         return admin.app();
       } catch (decodeError) {
         console.error('❌ Failed to decode FIREBASE_CREDENTIALS_BASE64:', decodeError.message);
+        throw decodeError;
       }
     }
 
@@ -55,7 +57,7 @@ const initializeFirebase = () => {
     const config = require('./config');
     
     if (!config.firebase.projectId || !config.firebase.clientEmail || !config.firebase.privateKey) {
-      throw new Error('Firebase credentials not found. Please add serviceAccountKey.json or set environment variables.');
+      throw new Error('Firebase credentials not found. Please set FIREBASE_SERVICE_ACCOUNT env variable.');
     }
     
     admin.initializeApp({
@@ -70,26 +72,35 @@ const initializeFirebase = () => {
     return admin.app();
   } catch (error) {
     console.error('❌ Firebase initialization error:', error.message);
-    console.error('📝 Please either:');
-    console.error('   1. Place serviceAccountKey.json in backend/ folder, OR');
-    console.error('   2. Set FIREBASE_* variables in .env file');
     throw error;
   }
 };
 
-// Initialize Firebase
-initializeFirebase();
+// Lazy initialization for serverless
+let _db = null;
+let _auth = null;
 
-// Export Firestore database instance
-const db = admin.firestore();
+const getDb = () => {
+  if (!_db) {
+    initializeFirebase();
+    _db = admin.firestore();
+    _db.settings({ ignoreUndefinedProperties: true });
+  }
+  return _db;
+};
 
-// Firestore settings
-db.settings({
-  ignoreUndefinedProperties: true,
-});
+const getAuth = () => {
+  if (!_auth) {
+    initializeFirebase();
+    _auth = admin.auth();
+  }
+  return _auth;
+};
 
 module.exports = {
   admin,
-  db,
-  auth: admin.auth(),
+  get db() { return getDb(); },
+  get auth() { return getAuth(); },
+  initializeFirebase,
 };
+
