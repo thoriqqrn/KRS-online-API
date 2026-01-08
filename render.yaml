@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: krs-online-api
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
